@@ -10,7 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class Job {
         String imagePath;
         PropertiesUtil propertiesUtil;
         Map<String, String> allProps;
-        List<Vmware> list = new ArrayList<>();
+        Map<String,Vmware> map = new HashMap<>();
         //读取配置文件
         //从命令行获取配置文件参数
         String configPath = System.getProperty("config");
@@ -59,17 +60,60 @@ public class Job {
             return;
         }
 
-        List<File> fileList = FileUtil.getFileList(imagePath);
+        FileUtil.getFileList(imagePath);
+        List<File> fileList = FileUtil.getFileList();
+       /* Map<String, File> fileMap = FileUtil.getFileList(imagePath);
+        Collection<File> values = fileMap.values();*/
 
         for (File file : fileList) {
             String text = OCRUtil.getText(file);
-            String lineSep = System.getProperty("line.separator");
-            String[] money = text.split(lineSep);
-            String[] split = file.getAbsolutePath().split("\\\\");
-            //money[0].replaceAll("[^0-9.]","")
-            String str = money[0].replaceAll("[^0-9.]", " ").trim().replaceAll("\\s+", " ");
-            Vmware vmware = new Vmware(split[split.length - 2], Long.parseLong(split[split.length - 3]), Double.parseDouble(str.split(" ")[0]), Double.parseDouble(str.split(" ")[1]), money[0].contains("BNB")? Double.parseDouble(str.split(" ")[2]):0D,  money[0].contains("SOL")? Double.parseDouble(str.split(" ")[2]):0D,LocalDate.now().toString());
-            list.add(vmware);
+            if(text.contains("GST") & text.contains("GMT")){
+                String lineSep = System.getProperty("line.separator");
+                String[] money = text.split(lineSep);
+                String[] split = file.getAbsolutePath().split("\\\\");
+                //money[0].replaceAll("[^0-9.]","")
+                String str = money[0].replaceAll("[^0-9.]", " ").trim().replaceAll("\\s+", " ");
+                logger.info(str);
+                //先从map中取
+                if(map.get(split[split.length - 2]) != null){
+                    //有
+                    String earn = map.get(split[split.length - 2]).getEarn();
+                    String energy = map.get(split[split.length - 2]).getEnergy();
+                    Vmware vmware = new Vmware(split[split.length - 2], Long.parseLong(split[split.length - 3]), Double.parseDouble(str.split(" ")[0]), Double.parseDouble(str.split(" ")[1]), money[0].contains("BNB")? Double.parseDouble(str.split(" ")[2]):0D,  money[0].contains("SOL")? Double.parseDouble(str.split(" ")[2]):0D,LocalDate.now().toString(),money[0].contains("BNB")?"BNB":"SOL",earn,energy);
+                    map.put(split[split.length - 2],vmware);
+                }else{
+                    //没有
+                    Vmware vmware = new Vmware(split[split.length - 2], Long.parseLong(split[split.length - 3]), Double.parseDouble(str.split(" ")[0]), Double.parseDouble(str.split(" ")[1]), money[0].contains("BNB")? Double.parseDouble(str.split(" ")[2]):0D,  money[0].contains("SOL")? Double.parseDouble(str.split(" ")[2]):0D,LocalDate.now().toString(),money[0].contains("BNB")?"BNB":"SOL","","");
+                    //list.add(vmware);
+                    map.put(split[split.length - 2],vmware);
+                }
+            }else{
+                String energyText = OCRUtil.getEnergyText(file);
+                if(energyText.contains("GST") & energyText.contains("/")){
+                    logger.info("能量图片");
+                    logger.info(energyText);
+                    String lineSep = System.getProperty("line.separator");
+                    String[] earnAndEnergyText = energyText.split("\n");
+                    String[] split = file.getAbsolutePath().split("\\\\");
+                    logger.info(earnAndEnergyText[0]);
+                    logger.info(earnAndEnergyText[1]);
+                    //如果存在就修改 不存在就添加对象
+                    if(map.get(split[split.length - 2]) != null){
+                        Vmware vmware = map.get(split[split.length - 2]);
+                        vmware.setEarn(earnAndEnergyText[0]);
+                        vmware.setEnergy(earnAndEnergyText[1]);
+                        map.put(split[split.length - 2],vmware);
+                    }else{
+                        Vmware vmware = new Vmware(split[split.length - 2], Long.parseLong(split[split.length - 3]),0D,0D,0D,0D,LocalDate.now().toString(),"",earnAndEnergyText[0],earnAndEnergyText[1]);
+                        map.put(split[split.length - 2],vmware);
+                    }
+                }else{
+                    //wallet 图片
+                    logger.info("wallet 图片");
+                }
+
+            }
+
         }
 
         try {
@@ -80,7 +124,7 @@ public class Job {
                 file.delete();
             }
 
-            EasyExcel.write(filePath,Vmware.class).sheet("sheet1").doWrite(list);
+            EasyExcel.write(filePath,Vmware.class).sheet("sheet1").doWrite(Arrays.asList(map.values().toArray()));
             logger.info("导出excel success...");
         } catch (Exception e) {
             throw new Exception("生成excel失败");

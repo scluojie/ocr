@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
  * @author kevin
@@ -38,4 +39,10 @@ public class Vmware {
     private Double sol;
     @ExcelProperty(value = "date", index = 6)
     private String date;
+    @ExcelProperty(value = "chain_name", index = 7)
+    private String chainName;
+    @ExcelProperty(value = "earn", index = 8)
+    private String earn;
+    @ExcelProperty(value = "energy", index = 9)
+    private String energy;
 }

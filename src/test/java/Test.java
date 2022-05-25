@@ -27,7 +27,7 @@ public class Test {
                 "3 ten\n" +
                 "4 split";
         String[] money = str.split("\n");
-        Vmware vmware = new Vmware("vmid", 20011L, Double.parseDouble(money[0].split(" ")[1]), Double.parseDouble(money[1].split(" ")[1]), money[2].contains("BNB")? Double.parseDouble(money[2].split(" ")[1]):0D,  money[2].contains("SOL")? Double.parseDouble(money[2].split(" ")[1]):0D, LocalDate.now().toString());
+        Vmware vmware = new Vmware("vmid", 20011L, Double.parseDouble(money[0].split(" ")[1]), Double.parseDouble(money[1].split(" ")[1]), money[2].contains("BNB")? Double.parseDouble(money[2].split(" ")[1]):0D,  money[2].contains("SOL")? Double.parseDouble(money[2].split(" ")[1]):0D, LocalDate.now().toString(),money[0].contains("BNB")?"BNB":"SOL","","");
         System.out.println(vmware);
     }
 }
